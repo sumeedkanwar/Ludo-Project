@@ -14,16 +14,19 @@
 class LudoGame {
 private:
     static constexpr int GRID_SIZE = 15;
+    static constexpr int TILE_SIZE = 800 / GRID_SIZE; // Adjusted for consistency
     static constexpr int MAX_TOKENS_PER_PLAYER = 4;
     static constexpr int NUM_PLAYERS = 4;
-    static constexpr int TILE_SIZE = 50;
-    static constexpr int SAFE_ZONES = 8;
 
     std::vector<std::vector<sf::Vector2i>> playerTokens;
     std::vector<sf::Color> playerColors;
-    std::vector<sf::Vector2i> playerStartPositions;
-    std::vector<sf::Vector2i> playerHomeColumns;
+    std::vector<sf::Vector2i> playerStartPositions; // Starting positions for each player (4 tokens each) spawned in the yard
+    std::vector<sf::Vector2i> playerHomeColumns; // Home columns for each player where tokens are safe
     std::vector<sf::Vector2i> ludoPath;
+    std::vector<sf::Vector2i> killerRedLudoPath;
+    std::vector<sf::Vector2i> killerGreenLudoPath;
+    std::vector<sf::Vector2i> killerBlueLudoPath;
+    std::vector<sf::Vector2i> killerYellowLudoPath;
     std::vector<sf::Vector2i> safeZones;
 
     sf::RenderWindow window;
@@ -45,10 +48,15 @@ private:
     bool isSafeZone(const sf::Vector2i& position);
     void renderGame();
     void handleMouseClick(int x, int y);
+    // void simulateGameplay(int player, int tokenIndex);
+
+    // Function to draw the Ludo board
+    void drawBoard();
 
 public:
     LudoGame();
     void runGame();
 };
+
 
 #endif // LUDO_GAME_HPP

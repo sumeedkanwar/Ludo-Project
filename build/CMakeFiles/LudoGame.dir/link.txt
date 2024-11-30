@@ -1,1 +1,1 @@
-/usr/bin/c++ CMakeFiles/LudoGame.dir/main.cpp.o CMakeFiles/LudoGame.dir/ludo_game.cpp.o -o LudoGame  /usr/lib/x86_64-linux-gnu/libsfml-graphics.so.2.5.1 /usr/lib/x86_64-linux-gnu/libsfml-window.so.2.5.1 /usr/lib/x86_64-linux-gnu/libsfml-system.so.2.5.1
+/usr/bin/c++ -Wl,--dependency-file,CMakeFiles/LudoGame.dir/link.d CMakeFiles/LudoGame.dir/main.cpp.o CMakeFiles/LudoGame.dir/ludo_game.cpp.o -o LudoGame  /usr/lib/x86_64-linux-gnu/libsfml-graphics.so.2.6.1 /usr/lib/x86_64-linux-gnu/libsfml-window.so.2.6.1 /usr/lib/x86_64-linux-gnu/libsfml-system.so.2.6.1

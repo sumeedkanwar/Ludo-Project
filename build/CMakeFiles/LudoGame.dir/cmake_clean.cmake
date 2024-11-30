@@ -1,4 +1,5 @@
 file(REMOVE_RECURSE
+  "CMakeFiles/LudoGame.dir/link.d"
   "CMakeFiles/LudoGame.dir/ludo_game.cpp.o"
   "CMakeFiles/LudoGame.dir/ludo_game.cpp.o.d"
   "CMakeFiles/LudoGame.dir/main.cpp.o"
