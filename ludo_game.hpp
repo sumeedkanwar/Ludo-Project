@@ -21,7 +21,6 @@ private:
     std::vector<std::vector<sf::Vector2i>> playerTokens;
     std::vector<sf::Color> playerColors;
     std::vector<sf::Vector2i> playerStartPositions; // Starting positions for each player (4 tokens each) spawned in the yard
-    std::vector<sf::Vector2i> playerHomeColumns; // Home columns for each player where tokens are safe
     std::vector<sf::Vector2i> ludoPath;
 
     std::vector<sf::Vector2i> killersPath[4];
@@ -56,6 +55,7 @@ private:
 public:
     LudoGame();
     void runGame();
+    void simulateGameplay();
 };
 
 

@@ -1,5 +1,7 @@
 #include "ludo_game.hpp"
 
+using namespace std;
+
 LudoGame::LudoGame()
     : window(sf::VideoMode(800, 800), "Ludo Game"),
       currentPlayer(0),
@@ -36,13 +38,6 @@ void LudoGame::initializeGame()
         {12, 2},
         {13, 1},
         {13, 2} // Blue
-    };
-
-    playerHomeColumns = {
-        {7, 14}, // Red
-        {0, 7},  // Green
-        {7, 0},  // Blue
-        {14, 7}  // Yellow
     };
 
     // Define paths for each player
@@ -366,29 +361,25 @@ int LudoGame::rollDice()
 
 sf::Vector2i LudoGame::moveTokenOnBoard(sf::Vector2i token, int player)
 {
-    const std::vector<sf::Vector2i>& path = killers[player] ? killersPath[player] : ludoPath;
+    const std::vector<sf::Vector2i>& path = killers[player - 1] ? killersPath[player] : ludoPath;
 
-    auto it = std::find(ludoPath.begin(), ludoPath.end(), token);
-    if (it == ludoPath.end())
-        return token;
-    size_t currentIndex = std::distance(ludoPath.begin(), it);
-    size_t newIndex = (currentIndex + diceValue) % ludoPath.size();
-
-    // Check if the token is entering its home column
-    if (currentIndex <= 50 && newIndex > 50 &&
-        ludoPath[50] == playerHomeColumns[player])
+    auto it = std::find(path.begin(), path.end(), token);
+    if (it == path.end() && !killers[player - 1])
     {
-        int stepsIntoHome = newIndex - 50;
-        if (stepsIntoHome <= 6)
-        {
-            return sf::Vector2i(playerHomeColumns[player].x,
-                                playerHomeColumns[player].y - stepsIntoHome);
-        }
-        // If overshooting, don't move
         return token;
     }
+    else if (it == path.end() && killers[player - 1])
+    {
+        // show a feedback message that the token is in the home column
+        std::cout << "Player " << player << "'s token is in the home column." << std::endl;
 
-    return ludoPath[newIndex];
+
+        return token;
+    }
+    size_t currentIndex = std::distance(path.begin(), it);
+    size_t newIndex = (currentIndex + diceValue) % path.size();
+
+    return path[newIndex];
 }
 
 void LudoGame::moveToken(int player, int tokenIndex)
@@ -413,12 +404,13 @@ void LudoGame::moveToken(int player, int tokenIndex)
     {
         if (otherPlayer != player)
         {
-            killers[player] = true;
 
             for (auto &otherToken : playerTokens[otherPlayer])
             {
                 if (otherToken == token && !isSafeZone(token))
                 {
+                    cout << "Player" << player << "  is a killer" << endl;
+                    killers[player] = true;
                     // Send the captured token back to its yard
                     otherToken = playerStartPositions[otherPlayer * MAX_TOKENS_PER_PLAYER];
                 }
@@ -610,6 +602,26 @@ void LudoGame::drawBoard()
     }
 }
 
+void LudoGame::simulateGameplay()
+{
+    while (window.isOpen())
+    {
+        // simulate game play by itself where the player rolls the dice and moves the token randomly without any user input
+        if (!diceRolled)
+        {
+            diceValue = rollDice();
+            diceRolled = true;
+        }
+        else
+        {
+            int tokenIndex = std::uniform_int_distribution<>(0, MAX_TOKENS_PER_PLAYER - 1)(randomGenerator);
+            moveToken(currentPlayer, tokenIndex);
+        }
+
+        renderGame();
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+}
 // explain the code:
 // token: a circle shape with a star shape inside it.
 // yard: the starting position of the token.
