@@ -48,7 +48,6 @@ private:
     void renderGame();
     void handleMouseClick(int x, int y);
     // void simulateGameplay(int player, int tokenIndex);
-
     // Function to draw the Ludo board
     void drawBoard();
 
