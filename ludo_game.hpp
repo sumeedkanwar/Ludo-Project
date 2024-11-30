@@ -23,10 +23,9 @@ private:
     std::vector<sf::Vector2i> playerStartPositions; // Starting positions for each player (4 tokens each) spawned in the yard
     std::vector<sf::Vector2i> playerHomeColumns; // Home columns for each player where tokens are safe
     std::vector<sf::Vector2i> ludoPath;
-    std::vector<sf::Vector2i> killerRedLudoPath;
-    std::vector<sf::Vector2i> killerGreenLudoPath;
-    std::vector<sf::Vector2i> killerBlueLudoPath;
-    std::vector<sf::Vector2i> killerYellowLudoPath;
+
+    std::vector<sf::Vector2i> killersPath[4];
+
     std::vector<sf::Vector2i> safeZones;
 
     sf::RenderWindow window;
@@ -37,6 +36,7 @@ private:
     int currentPlayer;
     int diceValue;
     bool diceRolled;
+    bool killers[4];
 
     std::mutex gameMutex;
 
