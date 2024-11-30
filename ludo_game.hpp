@@ -24,7 +24,7 @@ private:
     std::vector<sf::Vector2i> playerHomeColumns; // Home columns for each player where tokens are safe
     std::vector<sf::Vector2i> ludoPath;
 
-    std::vector<sf::Vector2i> killerPath[4];
+    std::vector<sf::Vector2i> killersPath[4];
 
     std::vector<sf::Vector2i> safeZones;
 

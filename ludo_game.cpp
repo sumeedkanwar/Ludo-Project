@@ -18,7 +18,9 @@ void LudoGame::initializeGame()
         sf::Color::Blue,
         sf::Color::Yellow};
 
-    killers = {false, false, false, false};
+    for (int i = 0; i < 4; ++i) {
+    killers[i] = false;
+    }
 
     playerStartPositions = {
         {1, 1}, {1, 2}, {2, 1}, {2, 2}, // Red
@@ -133,7 +135,7 @@ void LudoGame::initializeGame()
     };
 
     
-    killerRedLudoPath = {// part of ludo path starting from red spawn position to 7,0 then in to home column
+    std::vector<sf::Vector2i> killerRedLudoPath = {// part of ludo path starting from red spawn position to 7,0 then in to home column
                          {6, 1},
                          {6, 2},
                          {6, 3},
@@ -191,7 +193,7 @@ void LudoGame::initializeGame()
                          {7, 4},
                          {7, 5}};
 
-    killerGreenLudoPath = {// part of ludo path starting from green spawn position to 0,7 then in to home column of green
+    std::vector<sf::Vector2i> killerGreenLudoPath = {// part of ludo path starting from green spawn position to 0,7 then in to home column of green
                            {1, 8},
                            {2, 8},
                            {3, 8},
@@ -249,7 +251,7 @@ void LudoGame::initializeGame()
                            {4, 7},
                            {5, 7}};
 
-    killerBlueLudoPath = {// part of ludo path starting from blue spawn position to 7,14 then in to home column of blue
+    std::vector<sf::Vector2i> killerBlueLudoPath = {// part of ludo path starting from blue spawn position to 7,14 then in to home column of blue
                           {8, 13},
                           {8, 12},
                           {8, 11},
@@ -307,7 +309,7 @@ void LudoGame::initializeGame()
                           {7, 10},
                           {7, 9}};
 
-    killerYellowLudoPath = {// part of ludo path starting from yellow spawn position to 14,7 then in to home column of yellow
+    std::vector<sf::Vector2i> killerYellowLudoPath = {// part of ludo path starting from yellow spawn position to 14,7 then in to home column of yellow
                             {13, 6},
                             {12, 6},
                             {11, 6},
@@ -365,10 +367,10 @@ void LudoGame::initializeGame()
                             {10, 7},
                             {9, 7}};
 
-    std::vector<sf::Vector2i> killersPath[0] = killerRedLudoPath;
-    std::vector<sf::Vector2i> killersPath[1] = killerGreenLudoPath;
-    std::vector<sf::Vector2i> killersPath[2] = killerBlueLudoPath;
-    std::vector<sf::Vector2i> killersPath[3] = killerYellowLudoPath;
+    killersPath[0] = killerRedLudoPath;
+    killersPath[1] = killerGreenLudoPath;
+    killersPath[2] = killerBlueLudoPath;
+    killersPath[3] = killerYellowLudoPath;
 
     safeZones = {
         {1, 6}, {6, 1}, {8, 1}, {13, 6}, {13, 8}, {8, 13}, {6, 13}, {1, 8}};
