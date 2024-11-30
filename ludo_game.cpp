@@ -37,8 +37,8 @@ void LudoGame::initializeGame()
     playerHomeColumns = {
         {7, 14}, // Red
         {0, 7},  // Green
-        {7, 0},  // Blue
-        {14, 7}  // Yellow
+        {14, 7},  // Yellow
+        {7, 0}  // Blue
     };
 
     // Define paths for each player
@@ -139,7 +139,7 @@ void LudoGame::initializeGame()
     
 
     safeZones = {
-        {1, 6}, {6, 1}, {8, 1}, {13, 6}, {13, 8}, {8, 13}, {6, 13}, {1, 8}};
+        {2, 6}, {6, 1}, {8, 2}, {13, 6}, {12, 8}, {8, 13}, {6, 12}, {1, 8}};
 
     playerTokens.resize(NUM_PLAYERS);
 
@@ -237,7 +237,24 @@ void LudoGame::moveToken(int player, int tokenIndex)
                 if (otherToken == token && !isSafeZone(token))
                 {
                     // Send the captured token back to its yard
-                    otherToken = playerStartPositions[otherPlayer * MAX_TOKENS_PER_PLAYER];
+                    for (int i = 0; i < MAX_TOKENS_PER_PLAYER; ++i)
+                    {
+                        sf::Vector2i yardPosition = playerStartPositions[otherPlayer * MAX_TOKENS_PER_PLAYER + i];
+                        bool spotOccupied = false;
+                        for (const auto &token : playerTokens[otherPlayer])
+                        {
+                            if (token == yardPosition)
+                            {
+                                spotOccupied = true;
+                                break;
+                            }
+                        }
+                        if (!spotOccupied)
+                        {
+                            otherToken = yardPosition;
+                            break;
+                        }
+                    }
                 }
             }
         }

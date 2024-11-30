@@ -54,10 +54,10 @@ RM = /snap/cmake/1429/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /mnt/c/Users/hp/Desktop/Ludo-Project
+CMAKE_SOURCE_DIR = /home/sumeed/Project
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /mnt/c/Users/hp/Desktop/Ludo-Project/build
+CMAKE_BINARY_DIR = /home/sumeed/Project/build
 
 #=============================================================================
 # Directory level rules for the build root directory
@@ -85,14 +85,14 @@ clean: CMakeFiles/LudoGame.dir/clean
 CMakeFiles/LudoGame.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/LudoGame.dir/build.make CMakeFiles/LudoGame.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/LudoGame.dir/build.make CMakeFiles/LudoGame.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/hp/Desktop/Ludo-Project/build/CMakeFiles --progress-num=1,2,3 "Built target LudoGame"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/sumeed/Project/build/CMakeFiles --progress-num=1,2,3 "Built target LudoGame"
 .PHONY : CMakeFiles/LudoGame.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/LudoGame.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/hp/Desktop/Ludo-Project/build/CMakeFiles 3
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/sumeed/Project/build/CMakeFiles 3
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/LudoGame.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/hp/Desktop/Ludo-Project/build/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/sumeed/Project/build/CMakeFiles 0
 .PHONY : CMakeFiles/LudoGame.dir/rule
 
 # Convenience name for target.
