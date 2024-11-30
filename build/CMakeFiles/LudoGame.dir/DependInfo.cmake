@@ -8,8 +8,9 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/home/sumeed/Project/ludo_game.cpp" "CMakeFiles/LudoGame.dir/ludo_game.cpp.o" "gcc" "CMakeFiles/LudoGame.dir/ludo_game.cpp.o.d"
-  "/home/sumeed/Project/main.cpp" "CMakeFiles/LudoGame.dir/main.cpp.o" "gcc" "CMakeFiles/LudoGame.dir/main.cpp.o.d"
+  "/mnt/c/Users/hp/Desktop/Ludo-Project/ludo_game.cpp" "CMakeFiles/LudoGame.dir/ludo_game.cpp.o" "gcc" "CMakeFiles/LudoGame.dir/ludo_game.cpp.o.d"
+  "/mnt/c/Users/hp/Desktop/Ludo-Project/main.cpp" "CMakeFiles/LudoGame.dir/main.cpp.o" "gcc" "CMakeFiles/LudoGame.dir/main.cpp.o.d"
+  "" "LudoGame" "gcc" "CMakeFiles/LudoGame.dir/link.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

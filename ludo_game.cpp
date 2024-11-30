@@ -136,62 +136,7 @@ void LudoGame::initializeGame()
 
     
     std::vector<sf::Vector2i> killerRedLudoPath = {// part of ludo path starting from red spawn position to 7,0 then in to home column
-                         {6, 1},
-                         {6, 2},
-                         {6, 3},
-                         {6, 4},
-                         {6, 5},
-                         {5, 6},
-                         {4, 6},
-                         {3, 6},
-                         {2, 6},
-                         {1, 6},
-                         {0, 6},
-                         {0, 7},
-                         {0, 8},
-                         {1, 8},
-                         {2, 8},
-                         {3, 8},
-                         {4, 8},
-                         {5, 8},
-                         {6, 9},
-                         {6, 10},
-                         {6, 11},
-                         {6, 12},
-                         {6, 13},
-                         {6, 14},
-                         {7, 14},
-                         {8, 14},
-                         {8, 13},
-                         {8, 12},
-                         {8, 11},
-                         {8, 10},
-                         {8, 9},
-                         {9, 8},
-                         {10, 8},
-                         {11, 8},
-                         {12, 8},
-                         {13, 8},
-                         {14, 8},
-                         {14, 7},
-                         {14, 6},
-                         {13, 6},
-                         {12, 6},
-                         {11, 6},
-                         {10, 6},
-                         {9, 6},
-                         {8, 5},
-                         {8, 4},
-                         {8, 3},
-                         {8, 2},
-                         {8, 1},
-                         {8, 0},
-                         {7, 0},
-                         {7, 1},
-                         {7, 2},
-                         {7, 3},
-                         {7, 4},
-                         {7, 5}};
+    {6, 1},{6, 2},{6, 3},{6, 4},{6, 5},{5, 6},{4, 6},{3, 6},{2, 6},{1, 6},{0, 6},{0, 7},{0, 8},{1, 8},{2, 8},{3, 8},{4, 8},{5, 8},{6, 9},{6, 10},{6, 11},{6, 12},{6, 13},{6, 14},{7, 14},{8, 14},{8, 13},{8, 12},{8, 11},{8, 10},{8, 9},{9, 8},{10, 8},{11, 8},{12, 8},{13, 8},{14, 8},{14, 7},{14, 6},{13, 6},{12, 6},{11, 6},{10, 6},{9, 6},{8, 5},{8, 4},{8, 3},{8, 2},{8, 1},{8, 0},{7, 0},{7, 1},{7, 2},{7, 3},{7, 4},{7, 5}};
 
     std::vector<sf::Vector2i> killerGreenLudoPath = {// part of ludo path starting from green spawn position to 0,7 then in to home column of green
                            {1, 8},
@@ -373,7 +318,7 @@ void LudoGame::initializeGame()
     killersPath[3] = killerYellowLudoPath;
 
     safeZones = {
-        {2, 6}, {6, 1}, {8, 2}, {13, 6}, {12, 8}, {8, 13}, {6, 12}, {1, 8}};
+        {1, 6}, {6, 1}, {8, 1}, {13, 6}, {13, 8}, {8, 13}, {6, 13}, {1, 8}};
 
     playerTokens.resize(NUM_PLAYERS);
 
@@ -421,44 +366,28 @@ int LudoGame::rollDice()
 
 sf::Vector2i LudoGame::moveTokenOnBoard(sf::Vector2i token, int player)
 {
+    const std::vector<sf::Vector2i>& path = killers[player] ? killersPath[player] : ludoPath;
+
     auto it = std::find(ludoPath.begin(), ludoPath.end(), token);
     if (it == ludoPath.end())
         return token;
     size_t currentIndex = std::distance(ludoPath.begin(), it);
     size_t newIndex = (currentIndex + diceValue) % ludoPath.size();
 
-    // Check for token capture
-    for (int otherPlayer = 0; otherPlayer < NUM_PLAYERS; ++otherPlayer)
+    // Check if the token is entering its home column
+    if (currentIndex <= 50 && newIndex > 50 &&
+        ludoPath[50] == playerHomeColumns[player])
     {
-        if (otherPlayer != player)
+        int stepsIntoHome = newIndex - 50;
+        if (stepsIntoHome <= 6)
         {
-            for (auto &otherToken : playerTokens[otherPlayer])
-            {
-                if (otherToken == ludoPath[newIndex] && !isSafeZone(ludoPath[newIndex]))
-                {
-                    // Send the captured token back to its yard
-                    for (int i = 0; i < MAX_TOKENS_PER_PLAYER; ++i)
-                    {
-                        sf::Vector2i yardPosition = playerStartPositions[otherPlayer * MAX_TOKENS_PER_PLAYER + i];
-                        bool spotOccupied = false;
-                        for (const auto &token : playerTokens[otherPlayer])
-                        {
-                            if (token == yardPosition)
-                            {
-                                spotOccupied = true;
-                                break;
-                            }
-                        }
-                        if (!spotOccupied)
-                        {
-                            otherToken = yardPosition;
-                            break;
-                        }
-                    }
-                }
-            }
+            return sf::Vector2i(playerHomeColumns[player].x,
+                                playerHomeColumns[player].y - stepsIntoHome);
         }
+        // If overshooting, don't move
+        return token;
     }
+
     return ludoPath[newIndex];
 }
 
@@ -484,6 +413,8 @@ void LudoGame::moveToken(int player, int tokenIndex)
     {
         if (otherPlayer != player)
         {
+            killers[player] = true;
+
             for (auto &otherToken : playerTokens[otherPlayer])
             {
                 if (otherToken == token && !isSafeZone(token))
