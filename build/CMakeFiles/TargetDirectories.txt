@@ -1,0 +1,3 @@
+/home/sumeed/Project/build/CMakeFiles/LudoGame.dir
+/home/sumeed/Project/build/CMakeFiles/edit_cache.dir
+/home/sumeed/Project/build/CMakeFiles/rebuild_cache.dir
