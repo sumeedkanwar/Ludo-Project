@@ -146,7 +146,7 @@ sf::Vector2i LudoGame::moveTokenOnBoard(sf::Vector2i token, int player, int toke
             if (token == lastPosition) {
                 isFinished = true;
                 std::cout << "Player " << player << " has finished the path." << std::endl;
-                playerTokens[player].erase(std::remove(playerTokens[player].begin(), playerTokens[player].end(), token), playerTokens[player].end());
+                // playerTokens[player].erase(std::remove(playerTokens[player].begin(), playerTokens[player].end(), token), playerTokens[player].end());
                 finishedPlayerTokens[player][tokenIndex] = true;
             }
 
@@ -191,7 +191,8 @@ sf::Vector2i LudoGame::moveTokenOnBoard(sf::Vector2i token, int player, int toke
         }
         else if (opposingBlockCount > 0 && !isSafeZone(newPosition))
         {
-            // If blocked by opposing player's block of two tokens, invalidate the move
+            // If blocked by opposing player's block of two tokens, invalidate the move and return the original token and give turn to next player
+            std::cout << "Move blocked by opposing player's block of two tokens." << std::endl;
             return token;
         }
 
@@ -215,48 +216,51 @@ void LudoGame::moveToken(int player, int tokenIndex)
     auto &token = playerTokens[player][tokenIndex];
     if (isTokenInYard(token, player))
     {
+        std::cout<<"Player "<<player<<" token "<<tokenIndex<<" is in yard."<<std::endl;
         if (diceValue == 6)
         {
             token = ludoPath[player * 13]; // Starting point for each player
             std::cout << "Player " << player << " token " << tokenIndex << " spawned." << std::endl;
         }
+
     }
     else
     {
+        std::cout<<"Player "<<player<<" token "<<tokenIndex<<" is on Board."<<std::endl;
         
         sf::Vector2i newPosition = moveTokenOnBoard(token, player, tokenIndex);
 
         // Check if the new position is blocked by other players' tokens
-        bool isBlocked = false;
-        for (int otherPlayer = 0; otherPlayer < NUM_PLAYERS; ++otherPlayer)
-        {
-            if (otherPlayer != player)
-            {
-                int sameColorTokenCount = 0;
-                for (const auto &otherToken : playerTokens[otherPlayer])
-                {
-                    if (otherToken == newPosition)
-                    {
-                        sameColorTokenCount++;
-                    }
-                }
+        // bool isBlocked = false;
+        // for (int otherPlayer = 0; otherPlayer < NUM_PLAYERS; ++otherPlayer)
+        // {
+        //     if (otherPlayer != player)
+        //     {
+        //         int sameColorTokenCount = 0;
+        //         for (const auto &otherToken : playerTokens[otherPlayer])
+        //         {
+        //             if (otherToken == newPosition)
+        //             {
+        //                 sameColorTokenCount++;
+        //             }
+        //         }
 
-                if (sameColorTokenCount > 1 && !isSafeZone(newPosition))
-                {
-                    isBlocked = true;
-                    break;
-                }
-            }
-        }
+        //         if (sameColorTokenCount > 1 && !isSafeZone(newPosition))
+        //         {
+        //             isBlocked = true;
+        //             break;
+        //         }
+        //     }
+        // }
 
-        if (!isBlocked)
-        {
+        // if (!isBlocked)
+        // {
             token = newPosition;
-        }
-        else
-        {
-            std::cout << "Move blocked by other player's tokens." << std::endl;
-        }
+        // }
+        // else
+        // {
+        //     std::cout << "Move blocked by other player's tokens." << std::endl;
+        // }
     
     }
 
@@ -518,24 +522,12 @@ void LudoGame::simulateGameplay()
         do
         {
             tokenIndex = std::uniform_int_distribution<>(0, MAX_TOKENS_PER_PLAYER - 1)(randomGenerator);
-        } while (finishedPlayerTokens[currentPlayer][tokenIndex]); // Change condition to select tokens that have not finished their path
+        } while (finishedPlayerTokens[currentPlayer][tokenIndex]); // Skip finished tokens
         
         moveToken(currentPlayer, tokenIndex);
     }
 
     renderGame();
-    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    // std::this_thread::sleep_for(std::chrono::milliseconds(50));
 }
 }
-// explain the code:
-// token: a circle shape with a star shape inside it.
-// yard: the starting position of the token.
-// safe zone: the pink colored path in the game.
-// ludo path: the path that the token follows in the game.
-// home column: the column where the token enters the home path.
-// player: the player who is playing the game.
-// dice: a random number generator that determines the number of steps the token moves.
-// move token: a function that moves the token on the board based on the dice value.
-// is token in yard: a function that checks if the token is in the yard.
-// is safe zone: a function that checks if the token is in the safe zone.
-// render game: a function that renders the game window.
