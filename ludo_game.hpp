@@ -19,6 +19,7 @@ private:
     static constexpr int NUM_PLAYERS = 4;
 
     std::vector<std::vector<sf::Vector2i>> playerTokens;
+    std::vector<std::vector<bool>> finishedPlayerTokens;
     std::vector<sf::Color> playerColors;
     std::vector<sf::Vector2i> playerStartPositions; // Starting positions for each player (4 tokens each) spawned in the yard
     std::vector<sf::Vector2i> ludoPath;
@@ -41,7 +42,7 @@ private:
 
     void initializeGame();
     int rollDice();
-    sf::Vector2i moveTokenOnBoard(sf::Vector2i token, int player);
+    sf::Vector2i moveTokenOnBoard(sf::Vector2i token, int player, int tokenIndex);
     void moveToken(int player, int tokenIndex);
     bool isTokenInYard(const sf::Vector2i& token, int player);
     bool isSafeZone(const sf::Vector2i& position);

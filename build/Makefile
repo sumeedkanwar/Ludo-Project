@@ -57,10 +57,10 @@ RM = /snap/cmake/1429/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/sumeed/Project
+CMAKE_SOURCE_DIR = /mnt/c/Users/hp/Desktop/Ludo-Project
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/sumeed/Project/build
+CMAKE_BINARY_DIR = /mnt/c/Users/hp/Desktop/Ludo-Project/build
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -87,9 +87,9 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/sumeed/Project/build/CMakeFiles /home/sumeed/Project/build//CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/hp/Desktop/Ludo-Project/build/CMakeFiles /mnt/c/Users/hp/Desktop/Ludo-Project/build//CMakeFiles/progress.marks
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/sumeed/Project/build/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/hp/Desktop/Ludo-Project/build/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -129,30 +129,6 @@ LudoGame/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/LudoGame.dir/build.make CMakeFiles/LudoGame.dir/build
 .PHONY : LudoGame/fast
 
-ludo_game.o: ludo_game.cpp.o
-.PHONY : ludo_game.o
-
-# target to build an object file
-ludo_game.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/LudoGame.dir/build.make CMakeFiles/LudoGame.dir/ludo_game.cpp.o
-.PHONY : ludo_game.cpp.o
-
-ludo_game.i: ludo_game.cpp.i
-.PHONY : ludo_game.i
-
-# target to preprocess a source file
-ludo_game.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/LudoGame.dir/build.make CMakeFiles/LudoGame.dir/ludo_game.cpp.i
-.PHONY : ludo_game.cpp.i
-
-ludo_game.s: ludo_game.cpp.s
-.PHONY : ludo_game.s
-
-# target to generate assembly for a file
-ludo_game.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/LudoGame.dir/build.make CMakeFiles/LudoGame.dir/ludo_game.cpp.s
-.PHONY : ludo_game.cpp.s
-
 main.o: main.cpp.o
 .PHONY : main.o
 
@@ -186,9 +162,6 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... LudoGame"
-	@echo "... ludo_game.o"
-	@echo "... ludo_game.i"
-	@echo "... ludo_game.s"
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"

@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # Add the executable
-add_executable(LudoGame main.cpp ludo_game.cpp)
+add_executable(LudoGame main.cpp)
 
 # Find SFML package
 find_package(SFML 2.5 COMPONENTS graphics window system REQUIRED)
