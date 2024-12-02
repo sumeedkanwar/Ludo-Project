@@ -134,7 +134,7 @@ void LudoGame::askNumberOfPlayers()
         throw runtime_error("Font not loaded. Adjust font path.");
     }
 
-    sf::Text prompt("Enter the number of players (2-4):", font, 20);
+    sf::Text prompt("Enter the number of players (2-4) or Enter 0 for Team Mode:", font, 20);
     prompt.setPosition(20, 20);
     prompt.setFillColor(sf::Color::Black);
 
@@ -169,7 +169,17 @@ void LudoGame::askNumberOfPlayers()
                     {
                         numPlayers = players;
                         inputWindow.close();
+                    }else if (inputStr == "0") { //team mode
+                        numPlayers = 4;
+                        teamMode = true;
+                        inputWindow.close();
                     }
+                    else
+                    {
+                        inputStr.clear();
+                        input.setString(inputStr);
+                    }
+
                 }
             }
         }
@@ -183,6 +193,9 @@ void LudoGame::askNumberOfPlayers()
 
 void LudoGame::initializeGame()
 {
+
+    teamMode = false;
+
     playerColors = {
         sf::Color::Red,
         sf::Color::Green,
@@ -305,6 +318,11 @@ void LudoGame::checkForHits(int player, int tokenIndex) {
     }
 }
 
+bool LudoGame::areTeammates(int player1, int player2) {
+    if (!teamMode) return false;
+    return (player1 % 2 == player2 % 2);
+}
+
 sf::Vector2i LudoGame::moveTokenOnBoard(sf::Vector2i token, int player, int tokenIndex)
 {
     const vector<sf::Vector2i>& path = killers[player] ? killersPath[player] : ludoPath;
@@ -337,20 +355,23 @@ sf::Vector2i LudoGame::moveTokenOnBoard(sf::Vector2i token, int player, int toke
                                              playerTokens[player].end(), 
                                              newPosition);
         
+        int teamBlockCount = 0;
         int opposingBlockCount = 0;
         for (int otherPlayer = 0; otherPlayer < numPlayers; ++otherPlayer) {
             if (otherPlayer == player) continue;
 
-            int opposingTokenCount = count(playerTokens[otherPlayer].begin(), 
-                                                playerTokens[otherPlayer].end(), 
-                                                newPosition);
+            int tokenCount = count(playerTokens[otherPlayer].begin(), 
+                                   playerTokens[otherPlayer].end(), 
+                                   newPosition);
 
-            if (opposingTokenCount >= 2) {
+            if (areTeammates(player, otherPlayer)) {
+                teamBlockCount += tokenCount;
+            } else if (tokenCount >= 2) {
                 opposingBlockCount++;
             }
         }
 
-        if ((sameColorTokenCount <= 1 || isSafeZone(newPosition)) && 
+        if ((sameColorTokenCount + teamBlockCount <= 1 || isSafeZone(newPosition)) && 
             (opposingBlockCount == 0 || isSafeZone(newPosition))) {
             return newPosition;
         }
@@ -378,7 +399,7 @@ void LudoGame::moveToken(int player, int tokenIndex)
     }
 
     for (int otherPlayer = 0; otherPlayer < numPlayers; ++otherPlayer) {
-        if (otherPlayer != player) {
+        if (otherPlayer != player && !areTeammates(player, otherPlayer)) {
             for (auto& otherToken : playerTokens[otherPlayer]) {
                 if (otherToken == token && !isSafeZone(token) && token != ludoPath.back()) {
                     killers[player] = true;
@@ -397,6 +418,16 @@ void LudoGame::moveToken(int player, int tokenIndex)
 
     diceRolled = false;
     if (diceValue != 6 && !tokenCaptured) {
+        if (allTokensHome(player)) {
+            // Pass the dice roll to a teammate if the current player has finished all their tokens
+            for (int teammate = 0; teammate < numPlayers; ++teammate) {
+                if (areTeammates(player, teammate) && !allTokensHome(teammate)) {
+                    currentPlayer = teammate;
+                    std::cout << "Player " << player + 1 << " has finished all their tokens. Passing the turn to Player " << currentPlayer + 1 << std::endl;
+                    return;
+                }
+            }
+        }
         currentPlayer = (currentPlayer + 1) % numPlayers;
     }
 }

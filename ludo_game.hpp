@@ -20,7 +20,7 @@ public:
 
 private:
     static const int GRID_SIZE = 15;
-    static const int TILE_SIZE = 40;
+    static const int TILE_SIZE = 60;
     static const int MAX_TOKENS_PER_PLAYER = 4;
     static const int MAX_PLAYERS = 4;
 
@@ -38,6 +38,7 @@ private:
     vector<bool> killers;
     vector<int> finishingOrder;
 
+    bool teamMode;
     int numPlayers;
     int currentPlayer;
     int diceValue;
@@ -65,6 +66,7 @@ private:
     void askNumberOfPlayers();
     void initializeThreads();
     
+    
     static void* playerThread(void* arg);
     static void* rowColumnThread(void* arg);
     static void* masterThread(void* arg);
@@ -75,6 +77,7 @@ private:
     void removePlayer(int player);
     bool gameIsOver();
     void checkForHits(int player, int token);
+    bool areTeammates(int player1, int player2);
     
 };
 
