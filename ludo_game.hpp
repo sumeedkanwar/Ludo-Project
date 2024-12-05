@@ -9,6 +9,14 @@
 #include <mutex>
 #include <iostream>
 #include <pthread.h>
+#include <iostream>
+#include <algorithm>
+#include <chrono>
+#include <thread>
+#include <unistd.h>
+#include <mutex>
+#include <condition_variable>
+#include <semaphore.h>
 
 using namespace std;
 
@@ -44,6 +52,10 @@ private:
     int diceValue;
     bool diceRolled;
 
+    sem_t semaphore;
+    condition_variable cv;
+    vector<int> consecutiveTurnsWithoutProgress;
+
     mt19937 randomGenerator;
     mutex gameMutex;
 
@@ -63,13 +75,14 @@ private:
     void handleMouseClick(int x, int y);
     void drawBoard();
     void displayFinishingOrder();
-    void askNumberOfPlayers();
+    void askNumberOfPlayers(sf::RenderWindow& gameWindow);
     void initializeThreads();
     
     
     static void* playerThread(void* arg);
     static void* rowColumnThread(void* arg);
     static void* masterThread(void* arg);
+    static void* gameThread(void* arg);
 
     bool playerMadeProgress(int player);
     bool allTokensHome(int player);

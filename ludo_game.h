@@ -1,11 +1,4 @@
 #include "ludo_game.hpp"
-#include <iostream>
-#include <algorithm>
-#include <chrono>
-#include <thread>
-#include <unistd.h>
-
-using namespace std;
 
 struct ThreadParams {
     int player;
@@ -20,6 +13,11 @@ void* LudoGame::playerThread(void* arg) {
     LudoGame* game = params->game;
 
     while (true) {
+        sem_wait(&game->semaphore);
+
+        unique_lock<mutex> lock(game->gameMutex);
+        game->cv.wait(lock, [&game, &params] { return game->shouldSkipTurn(params->player) || game->diceRolled; });
+
         if (game->shouldSkipTurn(params->player)) {
             continue;
         }
@@ -33,7 +31,48 @@ void* LudoGame::playerThread(void* arg) {
         if (game->gameIsOver()) {
             break;
         }
+    }
 
+    return nullptr;
+}
+
+void* LudoGame::gameThread(void* arg) {
+    LudoGame* game = static_cast<LudoGame*>(arg);
+
+    while (true) {
+        // Lock the game state
+        unique_lock<mutex> lock(game->gameMutex);
+
+        for (int player = 0; player < game->numPlayers; ++player) {
+            if (game->playerMadeProgress(player)) {
+                game->consecutiveTurnsWithoutProgress[player] = 0;
+            } else {
+                game->consecutiveTurnsWithoutProgress[player]++;
+                if (game->consecutiveTurnsWithoutProgress[player] >= 20) {
+                    // Cancel this player's thread
+                    pthread_cancel(game->playerThreads[player]);
+                    game->removePlayer(player);
+                }
+            }
+
+            if (game->allTokensHome(player)) {
+                // Player has finished
+                game->finishPlayer(player);
+                pthread_cancel(game->playerThreads[player]);
+            }
+        }
+
+        if (game->gameIsOver()) {
+            break;
+        }
+
+        // Notify all player threads
+        game->cv.notify_all();
+
+        // Post the semaphore to allow player threads to proceed
+        sem_post(&game->semaphore);
+
+        // Sleep for a short duration before next check
         this_thread::sleep_for(chrono::milliseconds(10));
     }
 
@@ -122,72 +161,188 @@ LudoGame::LudoGame()
       diceValue(0),
       diceRolled(false)
 {
-    askNumberOfPlayers();
+    askNumberOfPlayers(window);
     initializeGame();
 }
 
-void LudoGame::askNumberOfPlayers()
+void LudoGame::askNumberOfPlayers(sf::RenderWindow& gameWindow)
 {
-    sf::RenderWindow inputWindow(sf::VideoMode(400, 200), "Enter Number of Players");
+    gameWindow.setPosition(sf::Vector2i(100, 100));
+
     sf::Font font;
     if (!font.loadFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")) {
         throw runtime_error("Font not loaded. Adjust font path.");
     }
 
-    sf::Text prompt("Enter the number of players (2-4) or Enter 0 for Team Mode:", font, 20);
-    prompt.setPosition(20, 20);
-    prompt.setFillColor(sf::Color::Black);
+    // Background 
+    sf::RectangleShape background(sf::Vector2f(1000, 1000));
+    background.setFillColor(sf::Color(240, 240, 240));
 
-    sf::Text input("", font, 20);
-    input.setPosition(20, 80);
-    input.setFillColor(sf::Color::Black);
+    // Title
+    sf::Text titleText("Ludo Game Setup", font, 50);
+    titleText.setPosition(200, 100);
+    titleText.setFillColor(sf::Color(50, 50, 50));
+    titleText.setStyle(sf::Text::Bold);
 
-    string inputStr;
-    while (inputWindow.isOpen())
+    // Mode Selection
+    sf::Text modePrompt("Select Game Mode:", font, 35);
+    modePrompt.setPosition(100, 250);
+    modePrompt.setFillColor(sf::Color(70, 70, 70));
+
+    std::vector<sf::RectangleShape> modeButtons;
+    std::vector<sf::Text> modeButtonLabels;
+    std::vector<std::string> modeButtonTexts = {"Classic Mode", "Team Mode"};
+
+    for (size_t i = 0; i < modeButtonTexts.size(); ++i) {
+        sf::RectangleShape button(sf::Vector2f(300, 100));
+        button.setPosition(100 + i * 350, 350);
+        button.setFillColor(sf::Color(52, 152, 219));
+        button.setOutlineThickness(3);
+        button.setOutlineColor(sf::Color(41, 128, 185));
+        modeButtons.push_back(button);
+
+        sf::Text label(modeButtonTexts[i], font, 30);
+        label.setPosition(150 + i * 350, 380);
+        label.setFillColor(sf::Color::White);
+        modeButtonLabels.push_back(label);
+    }
+
+    bool modeSelected = false;
+    bool teamModeSelected = false;
+
+    while (!modeSelected)
     {
         sf::Event event;
-        while (inputWindow.pollEvent(event))
+        while (gameWindow.pollEvent(event))
         {
             if (event.type == sf::Event::Closed)
-                inputWindow.close();
-            if (event.type == sf::Event::TextEntered)
+                gameWindow.close();
+            if (event.type == sf::Event::MouseButtonPressed)
             {
-                if (event.text.unicode >= '0' && event.text.unicode <= '9')
+                if (event.mouseButton.button == sf::Mouse::Left)
                 {
-                    inputStr += static_cast<char>(event.text.unicode);
-                    input.setString(inputStr);
-                }
-                else if (event.text.unicode == '\b' && !inputStr.empty())
-                {
-                    inputStr.pop_back();
-                    input.setString(inputStr);
-                }
-                else if (event.text.unicode == '\r')
-                {
-                    int players = stoi(inputStr);
-                    if (players >= 2 && players <= 4)
+                    sf::Vector2i mousePos = sf::Mouse::getPosition(gameWindow);
+                    for (size_t i = 0; i < modeButtons.size(); ++i)
                     {
-                        numPlayers = players;
-                        inputWindow.close();
-                    }else if (inputStr == "0") { //team mode
-                        numPlayers = 4;
-                        teamMode = true;
-                        inputWindow.close();
+                        if (modeButtons[i].getGlobalBounds().contains(static_cast<sf::Vector2f>(mousePos)))
+                        {
+                            modeButtons[i].setFillColor(sf::Color(41, 128, 185));
+                            
+                            if (i == 0) // Classic Mode
+                            {
+                                modeSelected = true;
+                                teamModeSelected = false;
+                            }
+                            else if (i == 1) // Team Mode
+                            {
+                                numPlayers = 4;
+                                teamMode = true;
+                                modeSelected = true;
+                                teamModeSelected = true;
+                            }
+                        }
                     }
-                    else
-                    {
-                        inputStr.clear();
-                        input.setString(inputStr);
-                    }
-
+                }
+            }
+            
+            sf::Vector2i mousePos = sf::Mouse::getPosition(gameWindow);
+            for (size_t i = 0; i < modeButtons.size(); ++i)
+            {
+                if (modeButtons[i].getGlobalBounds().contains(static_cast<sf::Vector2f>(mousePos)))
+                {
+                    modeButtons[i].setFillColor(sf::Color(100, 181, 246));
+                }
+                else
+                {
+                    modeButtons[i].setFillColor(sf::Color(52, 152, 219));
                 }
             }
         }
 
-        inputWindow.clear(sf::Color::White);
-        inputWindow.draw(prompt);
-        inputWindow.draw(input);
-        inputWindow.display();
+        gameWindow.clear(sf::Color::White);
+        gameWindow.draw(background);
+        gameWindow.draw(titleText);
+        gameWindow.draw(modePrompt);
+        for (const auto& button : modeButtons)
+            gameWindow.draw(button);
+        for (const auto& label : modeButtonLabels)
+            gameWindow.draw(label);
+        gameWindow.display();
+    }
+
+    if (!teamModeSelected)
+    {
+        sf::Text playerPrompt("Select the number of players:", font, 35);
+        playerPrompt.setPosition(100, 250);
+        playerPrompt.setFillColor(sf::Color(70, 70, 70));
+    
+        std::vector<sf::RectangleShape> playerButtons;
+        std::vector<sf::Text> playerButtonLabels;
+        std::vector<int> playerButtonValues = {2, 3, 4};
+        std::vector<std::string> playerButtonTexts = {"2 Players", "3 Players", "4 Players"};
+    
+        for (size_t i = 0; i < playerButtonValues.size(); ++i) {
+            sf::RectangleShape button(sf::Vector2f(300, 100));
+            button.setPosition(100, 350 + i * 150); // Adjusted for column layout
+            button.setFillColor(sf::Color(52, 152, 219));
+            button.setOutlineThickness(3);
+            button.setOutlineColor(sf::Color(41, 128, 185));
+            playerButtons.push_back(button);
+    
+            sf::Text label(playerButtonTexts[i], font, 30);
+            label.setPosition(150, 380 + i * 150); // Adjusted for column layout
+            label.setFillColor(sf::Color::White);
+            playerButtonLabels.push_back(label);
+        }
+    
+        bool inputReceived = false;
+    
+        while (!inputReceived)
+        {
+            sf::Event event;
+            while (gameWindow.pollEvent(event))
+            {
+                if (event.type == sf::Event::Closed)
+                    gameWindow.close();
+                if (event.type == sf::Event::MouseButtonPressed)
+                {
+                    if (event.mouseButton.button == sf::Mouse::Left)
+                    {
+                        sf::Vector2i mousePos = sf::Mouse::getPosition(gameWindow);
+                        for (size_t i = 0; i < playerButtons.size(); ++i)
+                        {
+                            if (playerButtons[i].getGlobalBounds().contains(static_cast<sf::Vector2f>(mousePos)))
+                            {
+                                numPlayers = playerButtonValues[i];
+                                inputReceived = true;
+                            }
+                        }
+                    }
+                }
+                
+                sf::Vector2i mousePos = sf::Mouse::getPosition(gameWindow);
+                for (size_t i = 0; i < playerButtons.size(); ++i)
+                {
+                    if (playerButtons[i].getGlobalBounds().contains(static_cast<sf::Vector2f>(mousePos)))
+                    {
+                        playerButtons[i].setFillColor(sf::Color(100, 181, 246));
+                    }
+                    else
+                    {
+                        playerButtons[i].setFillColor(sf::Color(52, 152, 219));
+                    }
+                }
+            }
+    
+            gameWindow.clear(sf::Color::White);
+            gameWindow.draw(background);
+            gameWindow.draw(playerPrompt);
+            for (const auto& button : playerButtons)
+                gameWindow.draw(button);
+            for (const auto& label : playerButtonLabels)
+                gameWindow.draw(label);
+            gameWindow.display();
+        }
     }
 }
 
@@ -450,6 +605,7 @@ bool LudoGame::isSafeZone(const sf::Vector2i& position)
 void LudoGame::renderGame()
 {
     window.clear(sf::Color::White);
+    window.setPosition(sf::Vector2i(100, 100));
 
     drawBoard();
 
@@ -657,6 +813,7 @@ void LudoGame::displayFinishingOrder() {
 
 void LudoGame::simulateGameplay()
 {
+    window.setPosition(sf::Vector2i(100, 100));
     while (window.isOpen()) {
         if (allPlayersFinished()) {
             displayFinishingOrder();
