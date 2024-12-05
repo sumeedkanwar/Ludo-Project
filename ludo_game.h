@@ -189,9 +189,9 @@ void LudoGame::askNumberOfPlayers(sf::RenderWindow& gameWindow)
     modePrompt.setPosition(100, 250);
     modePrompt.setFillColor(sf::Color(70, 70, 70));
 
-    std::vector<sf::RectangleShape> modeButtons;
-    std::vector<sf::Text> modeButtonLabels;
-    std::vector<std::string> modeButtonTexts = {"Classic Mode", "Team Mode"};
+    vector<sf::RectangleShape> modeButtons;
+    vector<sf::Text> modeButtonLabels;
+    vector<string> modeButtonTexts = {"Classic Mode", "Team Mode"};
 
     for (size_t i = 0; i < modeButtonTexts.size(); ++i) {
         sf::RectangleShape button(sf::Vector2f(300, 100));
@@ -272,14 +272,15 @@ void LudoGame::askNumberOfPlayers(sf::RenderWindow& gameWindow)
 
     if (!teamModeSelected)
     {
+        // Ask for number of players
         sf::Text playerPrompt("Select the number of players:", font, 35);
         playerPrompt.setPosition(100, 250);
         playerPrompt.setFillColor(sf::Color(70, 70, 70));
     
-        std::vector<sf::RectangleShape> playerButtons;
-        std::vector<sf::Text> playerButtonLabels;
-        std::vector<int> playerButtonValues = {2, 3, 4};
-        std::vector<std::string> playerButtonTexts = {"2 Players", "3 Players", "4 Players"};
+        vector<sf::RectangleShape> playerButtons;
+        vector<sf::Text> playerButtonLabels;
+        vector<int> playerButtonValues = {2, 3, 4};
+        vector<string> playerButtonTexts = {"2 Players", "3 Players", "4 Players"};
     
         for (size_t i = 0; i < playerButtonValues.size(); ++i) {
             sf::RectangleShape button(sf::Vector2f(300, 100));
@@ -344,13 +345,92 @@ void LudoGame::askNumberOfPlayers(sf::RenderWindow& gameWindow)
             gameWindow.display();
         }
     }
+
+    // Ask for simulation or manual play
+    sf::Text playModePrompt("Select Play Mode:", font, 35);
+    playModePrompt.setPosition(100, 250);
+    playModePrompt.setFillColor(sf::Color(70, 70, 70));
+
+    vector<sf::RectangleShape> playModeButtons;
+    vector<sf::Text> playModeButtonLabels;
+    vector<string> playModeButtonTexts = {"Manual Play", "Simulation"};
+
+    for (size_t i = 0; i < playModeButtonTexts.size(); ++i) {
+        sf::RectangleShape button(sf::Vector2f(300, 100));
+        button.setPosition(100 + i * 350, 350);
+        button.setFillColor(sf::Color(52, 152, 219));
+        button.setOutlineThickness(3);
+        button.setOutlineColor(sf::Color(41, 128, 185));
+        playModeButtons.push_back(button);
+
+        sf::Text label(playModeButtonTexts[i], font, 30);
+        label.setPosition(150 + i * 350, 380);
+        label.setFillColor(sf::Color::White);
+        playModeButtonLabels.push_back(label);
+    }
+
+    bool playModeSelected = false;
+
+    while (!playModeSelected)
+    {
+        sf::Event event;
+        while (gameWindow.pollEvent(event))
+        {
+            if (event.type == sf::Event::Closed)
+                gameWindow.close();
+            if (event.type == sf::Event::MouseButtonPressed)
+            {
+                if (event.mouseButton.button == sf::Mouse::Left)
+                {
+                    sf::Vector2i mousePos = sf::Mouse::getPosition(gameWindow);
+                    for (size_t i = 0; i < playModeButtons.size(); ++i)
+                    {
+                        if (playModeButtons[i].getGlobalBounds().contains(static_cast<sf::Vector2f>(mousePos)))
+                        {
+                            playModeButtons[i].setFillColor(sf::Color(41, 128, 185));
+                            
+                            if (i == 0) // Manual Play
+                            {
+                                simulationMode = false;
+                                playModeSelected = true;
+                            }
+                            else if (i == 1) // Simulation
+                            {
+                                simulationMode = true;
+                                playModeSelected = true;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            sf::Vector2i mousePos = sf::Mouse::getPosition(gameWindow);
+            for (size_t i = 0; i < playModeButtons.size(); ++i)
+            {
+                if (playModeButtons[i].getGlobalBounds().contains(static_cast<sf::Vector2f>(mousePos)))
+                {
+                    playModeButtons[i].setFillColor(sf::Color(100, 181, 246));
+                }
+                else
+                {
+                    playModeButtons[i].setFillColor(sf::Color(52, 152, 219));
+                }
+            }
+        }
+
+        gameWindow.clear(sf::Color::White);
+        gameWindow.draw(background);
+        gameWindow.draw(playModePrompt);
+        for (const auto& button : playModeButtons)
+            gameWindow.draw(button);
+        for (const auto& label : playModeButtonLabels)
+            gameWindow.draw(label);
+        gameWindow.display();
+    }
 }
 
 void LudoGame::initializeGame()
 {
-
-    teamMode = false;
-
     playerColors = {
         sf::Color::Red,
         sf::Color::Green,
@@ -499,7 +579,7 @@ sf::Vector2i LudoGame::moveTokenOnBoard(sf::Vector2i token, int player, int toke
             finishedPlayerTokens[player][tokenIndex] = true;
             return token;
         } else {
-            newIndex = path.size() - 1;
+            newIndex = newIndex % path.size();
         }
     }
 
@@ -578,7 +658,7 @@ void LudoGame::moveToken(int player, int tokenIndex)
             for (int teammate = 0; teammate < numPlayers; ++teammate) {
                 if (areTeammates(player, teammate) && !allTokensHome(teammate)) {
                     currentPlayer = teammate;
-                    std::cout << "Player " << player + 1 << " has finished all their tokens. Passing the turn to Player " << currentPlayer + 1 << std::endl;
+                    cout << "Player " << player + 1 << " has finished all their tokens. Passing the turn to Player " << currentPlayer + 1 << endl;
                     return;
                 }
             }
@@ -631,16 +711,23 @@ void LudoGame::renderGame()
 
             int tokenCount = count(playerTokens[player].begin(), playerTokens[player].end(), tokenPos);
 
-            token.setRadius(tokenCount > 1 ? TILE_SIZE / 4.f : TILE_SIZE / 3.f);
+            // Adjust the radius based on the number of tokens at the same position
+            float tokenRadius = (tokenCount > 1) ? TILE_SIZE / (3.f + tokenCount) : TILE_SIZE / 3.f;
+            token.setRadius(tokenRadius);
             star.setScale(tokenCount > 1 ? 0.5f : 1.f, tokenCount > 1 ? 0.5f : 1.f);
 
             token.setFillColor(playerColors[player]);
 
+            // Calculate the offset to slightly separate tokens
             float offset = (tokenCount > 1) ? TILE_SIZE / 8.f : 0.f;
-            token.setPosition(tokenPos.y * TILE_SIZE + TILE_SIZE / 6.f + (i * offset),
-                              tokenPos.x * TILE_SIZE + TILE_SIZE / 6.f + (i * offset));
+            float angleOffset = (tokenCount > 1) ? (i * 2 * 3.14159f / tokenCount) : 0.f;
+            float xOffset = offset * cos(angleOffset);
+            float yOffset = offset * sin(angleOffset);
+
+            token.setPosition(tokenPos.y * TILE_SIZE + TILE_SIZE / 6.f + xOffset,
+                              tokenPos.x * TILE_SIZE + TILE_SIZE / 6.f + yOffset);
             star.setPosition(token.getPosition() + sf::Vector2f(token.getRadius() - radius / 4.f, token.getRadius() - radius / 4.f));
-            
+
             window.draw(token);
             window.draw(star);
         }
@@ -681,21 +768,25 @@ bool LudoGame::allPlayersFinished() {
 
 void LudoGame::runGame()
 {
-    while (window.isOpen())
-    {
-        sf::Event event;
-        while (window.pollEvent(event))
+    if (simulationMode) {
+        simulateGameplay();
+    } else {
+        while (window.isOpen())
         {
-            if (event.type == sf::Event::Closed)
-                window.close();
-            if (event.type == sf::Event::MouseButtonPressed)
-                handleMouseClick(event.mouseButton.x, event.mouseButton.y);
-        }
+            sf::Event event;
+            while (window.pollEvent(event))
+            {
+                if (event.type == sf::Event::Closed)
+                    window.close();
+                if (event.type == sf::Event::MouseButtonPressed)
+                    handleMouseClick(event.mouseButton.x, event.mouseButton.y);
+            }
 
-        window.clear(sf::Color::White);
-        drawBoard();
-        renderGame();
-        window.display();
+            window.clear(sf::Color::White);
+            drawBoard();
+            renderGame();
+            window.display();
+        }
     }
 }
 
@@ -783,11 +874,11 @@ void LudoGame::displayFinishingOrder() {
     finishingOrderText.setCharacterSize(20);
     finishingOrderText.setFillColor(sf::Color::Black);
 
-    std::string orderText = "Finishing Order:\n";
-    const std::vector<std::string> placeSuffix = {"1st Place (Winner)", "2nd Place", "3rd Place"};
+    string orderText = "Finishing Order:\n";
+    const vector<string> placeSuffix = {"1st Place (Winner)", "2nd Place", "3rd Place"};
 
     for (size_t i = 0; i < finishingOrder.size(); ++i) {
-        orderText += placeSuffix[i] + ": Player " + std::to_string(finishingOrder[i] + 1) + "\n";
+        orderText += placeSuffix[i] + ": Player " + to_string(finishingOrder[i] + 1) + "\n";
     }
 
     finishingOrderText.setString(orderText);

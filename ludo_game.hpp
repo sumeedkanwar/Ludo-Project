@@ -51,6 +51,7 @@ private:
     int currentPlayer;
     int diceValue;
     bool diceRolled;
+    bool simulationMode;
 
     sem_t semaphore;
     condition_variable cv;
