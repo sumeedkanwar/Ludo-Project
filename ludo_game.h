@@ -37,43 +37,31 @@ void* LudoGame::playerThread(void* arg) {
 }
 
 void* LudoGame::gameThread(void* arg) {
+    int player = *static_cast<int*>(arg);
     LudoGame* game = static_cast<LudoGame*>(arg);
 
     while (true) {
         // Lock the game state
-        unique_lock<mutex> lock(game->gameMutex);
+        std::unique_lock<std::mutex> lock(game->gameMutex);
 
-        for (int player = 0; player < game->numPlayers; ++player) {
-            if (game->playerMadeProgress(player)) {
-                game->consecutiveTurnsWithoutProgress[player] = 0;
-            } else {
-                game->consecutiveTurnsWithoutProgress[player]++;
-                if (game->consecutiveTurnsWithoutProgress[player] >= 20) {
-                    // Cancel this player's thread
-                    pthread_cancel(game->playerThreads[player]);
-                    game->removePlayer(player);
-                }
-            }
-
-            if (game->allTokensHome(player)) {
-                // Player has finished
-                game->finishPlayer(player);
+        if (game->playerMadeProgress(player)) {
+            game->consecutiveTurnsWithoutProgress[player] = 0;
+        } else {
+            game->consecutiveTurnsWithoutProgress[player]++;
+            if (game->consecutiveTurnsWithoutProgress[player] >= 20) {
+                // Cancel this player's thread
                 pthread_cancel(game->playerThreads[player]);
+                game->removePlayer(player);
+                break;
             }
         }
 
-        if (game->gameIsOver()) {
+        if (game->allTokensHome(player)) {
+            // Player has finished
+            game->finishPlayer(player);
+            pthread_cancel(game->playerThreads[player]);
             break;
         }
-
-        // Notify all player threads
-        game->cv.notify_all();
-
-        // Post the semaphore to allow player threads to proceed
-        sem_post(&game->semaphore);
-
-        // Sleep for a short duration before next check
-        this_thread::sleep_for(chrono::milliseconds(10));
     }
 
     return nullptr;
@@ -102,24 +90,12 @@ void* LudoGame::rowColumnThread(void* arg) {
 
 void* LudoGame::masterThread(void* arg) {
     LudoGame* game = static_cast<LudoGame*>(arg);
-    vector<int> consecutiveTurnsWithoutProgress(game->numPlayers, 0);
 
     while (true) {
         // Lock the game state
-        lock_guard<mutex> lock(game->gameMutex);
+        std::unique_lock<std::mutex> lock(game->gameMutex);
 
         for (int player = 0; player < game->numPlayers; ++player) {
-            if (game->playerMadeProgress(player)) {
-                consecutiveTurnsWithoutProgress[player] = 0;
-            } else {
-                consecutiveTurnsWithoutProgress[player]++;
-                if (consecutiveTurnsWithoutProgress[player] >= 20) {
-                    // Cancel this player's thread
-                    pthread_cancel(game->playerThreads[player]);
-                    game->removePlayer(player);
-                }
-            }
-
             if (game->allTokensHome(player)) {
                 // Player has finished
                 game->finishPlayer(player);
@@ -130,9 +106,6 @@ void* LudoGame::masterThread(void* arg) {
         if (game->gameIsOver()) {
             break;
         }
-
-        // Sleep for a short duration before next check
-        this_thread::sleep_for(chrono::milliseconds(10));
     }
 
     return nullptr;
@@ -704,12 +677,23 @@ void LudoGame::renderGame()
     }
     star.setFillColor(sf::Color::Black);
 
+    // Create a map to count tokens at each position
+    map<std::pair<int, int>, int> tokenPositionCount;
+    for (int player = 0; player < numPlayers; ++player) {
+        for (int i = 0; i < MAX_TOKENS_PER_PLAYER; ++i) {
+            const auto& tokenPos = playerTokens[player][i];
+            if (!finishedPlayerTokens[player][i]) {
+                tokenPositionCount[{tokenPos.x, tokenPos.y}]++;
+            }
+        }
+    }
+
     for (int player = 0; player < numPlayers; ++player) {
         for (int i = 0; i < MAX_TOKENS_PER_PLAYER; ++i) {
             const auto& tokenPos = playerTokens[player][i];
             if (finishedPlayerTokens[player][i]) continue;
 
-            int tokenCount = count(playerTokens[player].begin(), playerTokens[player].end(), tokenPos);
+            int tokenCount = tokenPositionCount[{tokenPos.x, tokenPos.y}];
 
             // Adjust the radius based on the number of tokens at the same position
             float tokenRadius = (tokenCount > 1) ? TILE_SIZE / (3.f + tokenCount) : TILE_SIZE / 3.f;
@@ -724,8 +708,12 @@ void LudoGame::renderGame()
             float xOffset = offset * cos(angleOffset);
             float yOffset = offset * sin(angleOffset);
 
-            token.setPosition(tokenPos.y * TILE_SIZE + TILE_SIZE / 6.f + xOffset,
-                              tokenPos.x * TILE_SIZE + TILE_SIZE / 6.f + yOffset);
+            // Adjust the position to avoid overlap
+            float adjustedXOffset = xOffset + (i % 2 == 0 ? -offset : offset);
+            float adjustedYOffset = yOffset + (i % 2 == 0 ? -offset : offset);
+
+            token.setPosition(tokenPos.y * TILE_SIZE + TILE_SIZE / 6.f + adjustedXOffset,
+                              tokenPos.x * TILE_SIZE + TILE_SIZE / 6.f + adjustedYOffset);
             star.setPosition(token.getPosition() + sf::Vector2f(token.getRadius() - radius / 4.f, token.getRadius() - radius / 4.f));
 
             window.draw(token);
@@ -771,6 +759,7 @@ void LudoGame::runGame()
     if (simulationMode) {
         simulateGameplay();
     } else {
+        initializeThreads();
         while (window.isOpen())
         {
             sf::Event event;
@@ -787,6 +776,15 @@ void LudoGame::runGame()
             renderGame();
             window.display();
         }
+
+        // Join threads to ensure proper cleanup
+        for (int i = 0; i < numPlayers; ++i) {
+            pthread_join(playerThreads[i], nullptr);
+        }
+        for (int i = 0; i < 2 * GRID_SIZE; ++i) {
+            pthread_join(rowColumnThreads[i], nullptr);
+        }
+        pthread_join(masterThreadHandle, nullptr);
     }
 }
 
@@ -874,11 +872,44 @@ void LudoGame::displayFinishingOrder() {
     finishingOrderText.setCharacterSize(20);
     finishingOrderText.setFillColor(sf::Color::Black);
 
-    string orderText = "Finishing Order:\n";
-    const vector<string> placeSuffix = {"1st Place (Winner)", "2nd Place", "3rd Place"};
+    string orderText;
+    if (teamMode) {
+        // In team mode, show only the winning team
+        orderText = "Winning Team:\n";
+        for (int i = 0; i < numPlayers; ++i) {
+            if (finishingOrder[i] == 1)
+            {
+                for (int j = 0; j < numPlayers; ++j)
+                {
+                    if (finishingOrder[j] == 3)
+                    {
+                        orderText += "Team 1\n";
+                        orderText += "Players: Player 1 and Player 3\n";
+                        break;
+                    }
+                }
+            }
+            else if (finishingOrder[i] == 2)
+            {
+                for (int j = 0; j < numPlayers; ++j)
+                {
+                    if (finishingOrder[j] == 4)
+                    {
+                        orderText += "Team 2\n";
+                        orderText += "Players: Player 2 and Player 4\n";
+                        break;
+                    }
+                }
+            }
+        }
+    } else {
+        // In individual mode, show the finishing order
+        orderText = "Finishing Order:\n";
+        const vector<string> placeSuffix = {"1st Place (Winner)", "2nd Place", "3rd Place"};
 
-    for (size_t i = 0; i < finishingOrder.size(); ++i) {
-        orderText += placeSuffix[i] + ": Player " + to_string(finishingOrder[i] + 1) + "\n";
+        for (size_t i = 0; i < finishingOrder.size(); ++i) {
+            orderText += placeSuffix[i] + ": Player " + to_string(finishingOrder[i] + 1) + "\n";
+        }
     }
 
     finishingOrderText.setString(orderText);

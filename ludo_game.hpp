@@ -17,6 +17,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <semaphore.h>
+#include <map>
 
 using namespace std;
 
@@ -92,7 +93,7 @@ private:
     bool gameIsOver();
     void checkForHits(int player, int token);
     bool areTeammates(int player1, int player2);
-    
+    void discardTurn(int player);
 };
 
 #endif // LUDO_GAME_HPP
